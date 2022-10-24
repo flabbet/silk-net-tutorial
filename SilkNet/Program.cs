@@ -14,10 +14,10 @@ public class Program
     private static string vertexShader;
     private static string fragmentShader;
     
-    private static uint _vao;
-    private static uint _vbo;
-    private static uint _ebo;
-    private static uint _shaderProgram;
+    private static BufferObject<float> _vbo;
+    private static BufferObject<uint> _ebo;
+    private static VertexArrayObject<float, uint> _vao;
+    private static Shader _shaderProgram;
 
     private static void Main(string[] args)
     {
@@ -46,31 +46,14 @@ public class Program
         //Getting the opengl api for drawing to the screen.
         _gl = GL.GetApi(_window);
 
-        //Creating a vertex array.
-        _vao = GenerateVertexArray();
-
-        //Initializing a vertex buffer that holds the vertex data.
-        _vbo = GenerateBuffer(GLEnum.ArrayBuffer);
-        BindVertexGeometryData();
-
-        _ebo = GenerateBuffer(GLEnum.ElementArrayBuffer);
-        BindIndicesGeometryData();
-
-        uint vertShader = CreateShader(ShaderType.VertexShader, vertexShader, out _);
-        uint fragShader = CreateShader(ShaderType.FragmentShader, fragmentShader, out _);
-
-        _shaderProgram = CreateShaderProgram(vertShader, fragShader);
+        _ebo = new BufferObject<uint>(_gl, GeometryData.Indices, BufferTargetARB.ElementArrayBuffer);
+        _vbo = new BufferObject<float>(_gl, GeometryData.Vertices, BufferTargetARB.ArrayBuffer);
+        _vao = new VertexArrayObject<float, uint>(_gl, _vbo, _ebo);
         
-        _gl.GetProgram(_shaderProgram, GLEnum.LinkStatus, out var linkingStatus);
-        if (linkingStatus == 0)
-        {
-            Console.WriteLine($"Error linking shaders {_gl.GetProgramInfoLog(_shaderProgram)}");
-        }
+        _vao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 7, 0);
+        _vao.VertexAttributePointer(1, 4, VertexAttribPointerType.Float, 7, 3);
 
-        DisposeShaders(_shaderProgram, fragShader, vertShader);
-        
-        //Tell opengl how to give the data to the shaders.
-        SetupVertexInputPass();
+        _shaderProgram = new Shader(_gl, vertexShader, fragmentShader);
     }
     
     private static void OnUpdate(double value)
@@ -82,91 +65,19 @@ public class Program
     {
         _gl.Clear((uint)ClearBufferMask.ColorBufferBit);
         
-        _gl.BindVertexArray(_vao);
-        _gl.UseProgram(_shaderProgram);
-        
+        _vao.Bind();
+        _shaderProgram.Use();
+        _shaderProgram.SetUniform("uBlue", (float)Math.Sin(DateTime.Now.Millisecond / 1000f * Math.PI));
+
         _gl.DrawElements(PrimitiveType.Triangles, (uint)GeometryData.Indices.Length, DrawElementsType.UnsignedInt, null);
     }
     
     private static void OnClose()
     {
-        _gl.DeleteBuffer(_vbo);
-        _gl.DeleteBuffer(_ebo);
-        _gl.DeleteVertexArray(_vao);
-        _gl.DeleteProgram(_shaderProgram);
-    }
-
-    private static unsafe void SetupVertexInputPass()
-    {
-        _gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), null);
-        _gl.EnableVertexAttribArray(0);
-    }
-
-    private static void DisposeShaders(uint shaderProgram, params uint[] shaders)
-    {
-        for (int i = 0; i < shaders.Length; i++)
-        {
-            var shader = shaders[i];
-            _gl.DetachShader(shaderProgram, shader);
-            _gl.DeleteShader(shader);
-        }
-    }
-
-    private static uint CreateShaderProgram(params uint[] shaders)
-    {
-        uint program = _gl.CreateProgram();
-
-        for (int i = 0; i < shaders.Length; i++)
-        {
-            _gl.AttachShader(program, shaders[i]);
-        }
-        
-        _gl.LinkProgram(program);
-        return program;
-    }
-    
-    private static uint CreateShader(ShaderType type, string rawShader, out string errors)
-    {
-        uint shader = _gl.CreateShader(type);
-        _gl.ShaderSource(shader, rawShader);
-        _gl.CompileShader(shader);
-        errors = _gl.GetShaderInfoLog(shader);
-        if (!string.IsNullOrWhiteSpace(errors))
-        {
-            Console.WriteLine($"Error compiling shader: {errors}");
-        }
-        
-        return shader;
-    }
-
-    private static unsafe void BindIndicesGeometryData()
-    {
-        fixed (void* i = &GeometryData.Indices[0])
-        {
-            _gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(GeometryData.Indices.Length * sizeof(uint)), i, BufferUsageARB.StaticDraw);
-        }
-    }
-
-    private static unsafe void BindVertexGeometryData()
-    {
-        fixed (void* v = &GeometryData.Vertices[0])
-        {
-            _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint) (GeometryData.Vertices.Length * sizeof(uint)), v, BufferUsageARB.StaticDraw); //Setting buffer data.
-        }
-    }
-
-    private static uint GenerateVertexArray()
-    {
-        uint vbo = _gl.GenVertexArray();
-        _gl.BindVertexArray(vbo);
-        return vbo;
-    }
-    
-    private static uint GenerateBuffer(GLEnum bufferType)
-    {
-        uint buffer = _gl.GenBuffer();
-        _gl.BindBuffer(bufferType, buffer);
-        return buffer;
+        _vbo.Dispose();
+        _ebo.Dispose();
+        _vao.Dispose();
+        _shaderProgram.Dispose();
     }
 
     private static void RegisterKeyboards(IInputContext input)

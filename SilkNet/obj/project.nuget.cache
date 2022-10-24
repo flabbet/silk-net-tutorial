@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "BcVOEVR1yZ+oynly/SBMOkkfERUCj1Hq66MCRi8q7BoYp9KMUuq4pLI14hKHX7mD7o/qwRtoU4uKMJmI0TLrVA==",
+  "dgSpecHash": "aNFFF87+efjuvFsOWvdK14FEKao18WmWxb4+WOdXYJSnscdHRPVLvQdDrJ1/aW+XpYODiNbPJecTZBNlHDCYAg==",
   "success": true,
-  "projectFilePath": "C:\\Users\\Krzysztof\\RiderProjects\\SilkNet\\SilkNet\\SilkNet.csproj",
+  "projectFilePath": "C:\\Users\\Krzysztof\\Documents\\GitHub\\silk-net-tutorial\\SilkNet\\SilkNet.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Krzysztof\\.nuget\\packages\\microsoft.csharp\\4.7.0\\microsoft.csharp.4.7.0.nupkg.sha512",
     "C:\\Users\\Krzysztof\\.nuget\\packages\\microsoft.dotnet.platformabstractions\\3.1.6\\microsoft.dotnet.platformabstractions.3.1.6.nupkg.sha512",
