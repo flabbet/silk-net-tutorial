@@ -12,6 +12,6 @@ public abstract class NativeObject : IDisposable
         GlContext = glContext;
         Handle = handle;
     }
-    
+
     public abstract void Dispose();
 }

@@ -2,7 +2,7 @@
 
 namespace SilkNet;
 
-public class VertexArrayObject<TVertexType, TIndexType> : NativeObject 
+public sealed class VertexArrayObject<TVertexType, TIndexType> : NativeObject 
     where TVertexType : unmanaged
     where TIndexType : unmanaged
 {

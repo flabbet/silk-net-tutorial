@@ -2,7 +2,7 @@
 
 namespace SilkNet;
 
-public class Shader : NativeObject
+public sealed class Shader : NativeObject
 {
     public Shader(GL glContext, string rawVertex, string rawFragment) : base(glContext, glContext.CreateProgram())
     {

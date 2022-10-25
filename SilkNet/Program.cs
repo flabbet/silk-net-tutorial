@@ -18,6 +18,7 @@ public class Program
     private static BufferObject<uint> _ebo;
     private static VertexArrayObject<float, uint> _vao;
     private static Shader _shaderProgram;
+    private static Texture _texture; 
 
     private static void Main(string[] args)
     {
@@ -50,10 +51,11 @@ public class Program
         _vbo = new BufferObject<float>(_gl, GeometryData.Vertices, BufferTargetARB.ArrayBuffer);
         _vao = new VertexArrayObject<float, uint>(_gl, _vbo, _ebo);
         
-        _vao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 7, 0);
-        _vao.VertexAttributePointer(1, 4, VertexAttribPointerType.Float, 7, 3);
+        _vao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 5, 0);
+        _vao.VertexAttributePointer(1, 2, VertexAttribPointerType.Float, 5, 3);
 
         _shaderProgram = new Shader(_gl, vertexShader, fragmentShader);
+        _texture = new Texture(_gl, "texture.png");
     }
     
     private static void OnUpdate(double value)
@@ -67,7 +69,9 @@ public class Program
         
         _vao.Bind();
         _shaderProgram.Use();
-        _shaderProgram.SetUniform("uBlue", (float)Math.Sin(DateTime.Now.Millisecond / 1000f * Math.PI));
+
+        _texture.Bind();
+        _shaderProgram.SetUniform("uTexture0", 0);
 
         _gl.DrawElements(PrimitiveType.Triangles, (uint)GeometryData.Indices.Length, DrawElementsType.UnsignedInt, null);
     }
@@ -78,6 +82,7 @@ public class Program
         _ebo.Dispose();
         _vao.Dispose();
         _shaderProgram.Dispose();
+        _texture.Dispose();
     }
 
     private static void RegisterKeyboards(IInputContext input)
