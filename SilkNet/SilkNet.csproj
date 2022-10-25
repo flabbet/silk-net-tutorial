@@ -18,14 +18,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="Shaders\FragmentShader.glsl" />
-      <Resource Include="Shaders\FragmentShader.glsl">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Resource>
-      <None Remove="Shaders\VertexShader.glsl" />
-      <Resource Include="Shaders\VertexShader.glsl">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Resource>
+      <Content Include="Shaders\*">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 </Project>
