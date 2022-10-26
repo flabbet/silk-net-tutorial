@@ -1,4 +1,5 @@
-﻿using Silk.NET.OpenGL;
+﻿using System.Numerics;
+using Silk.NET.OpenGL;
 
 namespace SilkNet;
 
@@ -42,6 +43,12 @@ public sealed class Shader : NativeObject
     {
         int location = GetUniformLocation(name);
         GlContext.Uniform1(location, value);
+    }
+    
+    public unsafe void SetUniform(string name, Matrix4x4 transformViewMatrix)
+    {
+        int location = GetUniformLocation(name);
+        GlContext.UniformMatrix4(location, 1, false, (float*)&transformViewMatrix);
     }
 
     private int GetUniformLocation(string name)
