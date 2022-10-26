@@ -21,6 +21,12 @@ public class Program
     private static Shader _shaderProgram;
     private static Texture _texture;
     private static Transform[] _transforms = new Transform[4];
+
+    private static Vector3 _cameraPosition = new Vector3(0, 1, 3f);
+    private static Vector3 _cameraTarget = Vector3.Zero;
+    private static Vector3 _cameraDirection = Vector3.Normalize(_cameraPosition - _cameraTarget);
+    private static Vector3 _cameraRight = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, _cameraDirection));
+    private static Vector3 _cameraUp = Vector3.Cross(_cameraDirection, _cameraRight);
     
     private static void Main(string[] args)
     {
@@ -58,58 +64,32 @@ public class Program
 
         _shaderProgram = new Shader(_gl, vertexShader, fragmentShader);
         _texture = new Texture(_gl, "texture.png");
-        
-        // Translation
-        _transforms[0] = new Transform
-        {
-            Position = new Vector3(0.5f, 0.5f, 0f)
-        };
-
-        // Rotation
-        _transforms[1] = new Transform
-        {
-            Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, 1f)
-        };
-
-        // Scale
-        _transforms[2] = new Transform
-        {
-            Scale = 0.5f
-        };
-        
-        // Mixed
-        _transforms[3] = new Transform()
-        {
-            Position = new Vector3(-0.5f, 0.5f, 0f),
-            Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, 1f),
-            Scale = 0.5f
-        };
     }
     
     private static void OnUpdate(double value)
     {
-        _transforms[1].Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY, (DateTime.Now.Millisecond / 1000f) * 360);
+       
     }
     
     private static unsafe void OnRender(double deltaTime)
     {
-        _gl.Clear((uint)ClearBufferMask.ColorBufferBit);
+        _gl.Enable(EnableCap.DepthTest);
+        _gl.Clear((uint) (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit));
         _vao.Bind();
         
         _shaderProgram.Use();
         _texture.Bind();
         
-        _shaderProgram.SetUniform("uTexture0", 0);
-        _shaderProgram.SetUniform("time", DateTime.Now.Millisecond / 1000f);
-
+        var difference = (float)(_window.Time * 100);
+        var model = Matrix4x4.CreateRotationY(MathHelper.DegreesToRadians(difference));
+        var view = Matrix4x4.CreateLookAt(_cameraPosition, _cameraTarget, _cameraUp);
+        var projection = Matrix4x4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45f), _window.Size.X / _window.Size.Y, 0.1f, 100f);
         
-        for (int i = 0; i < _transforms.Length; i++)
-        {
-            Transform transform = _transforms[i];
-            _shaderProgram.SetUniform("uModel", transform.ViewMatrix);
-            _gl.DrawElements(PrimitiveType.Triangles, (uint)GeometryData.Indices.Length, DrawElementsType.UnsignedInt, null);
-        }
-
+        _shaderProgram.SetUniform("uModel", model);
+        _shaderProgram.SetUniform("uView", view);
+        _shaderProgram.SetUniform("uProjection", projection);
+        
+        _gl.DrawArrays(PrimitiveType.Triangles, 0, 36);
     }
     
     private static void OnClose()

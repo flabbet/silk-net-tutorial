@@ -4,10 +4,12 @@ layout (location = 1) in vec2 vUv;
 out vec2 fUv;
 
 uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
 
 void main()
 {
-    gl_Position = uModel * vec4(vPos, 1.0);
-    //Setting the uv coordinates on the vertices will mean they get correctly divided out amongst the fragments.
+    //Multiplying our uniform with the vertex position, the multiplication order here does matter.
+    gl_Position = uProjection * uView * uModel * vec4(vPos, 1.0);
     fUv = vUv;
 }
