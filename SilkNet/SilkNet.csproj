@@ -21,6 +21,9 @@
       <Content Include="Shaders\*">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
+        <Content Include="Images\*">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
 </Project>
