@@ -28,10 +28,14 @@ public class Program
 
     private static Vector2 _lastMousePosition;
     private static IKeyboard _primaryKeyboard;
-    
+
+    private static Vector3 _lightColor;
     private const int GifSpeed = 1;
     private static float _normalizedTime;
     private static int _currentFrame;
+    
+    //Track when the window started so we can use the time elapsed to rotate the cube
+    private static DateTime _startTime;
     
     private static void Main(string[] args)
     {
@@ -51,6 +55,7 @@ public class Program
 
     private static void OnLoad()
     {
+        _startTime = DateTime.UtcNow;
         IInputContext input = _window.CreateInput();
         RegisterKeyboards(input);
         RegisterMouse(input);
@@ -127,11 +132,26 @@ public class Program
         _lightingShader.SetUniform("uModel", Matrix4x4.CreateRotationY(25f));
         _lightingShader.SetUniform("uView", _camera.ViewMatrix);
         _lightingShader.SetUniform("uProjection", _camera.ProjectionMatrix);
-        _lightingShader.SetUniform("objectColor", new Vector3(1f, 0.5f, 0.31f));
-        _lightingShader.SetUniform("lightColor", Vector3.One);
-        _lightingShader.SetUniform("lightPos", LampPosition);
         _lightingShader.SetUniform("viewPos", _camera.Position);
+        _lightingShader.SetUniform("material.ambient", new Vector3(1f, 0.5f, 0.31f));
+        _lightingShader.SetUniform("material.diffuse", new Vector3(1f, 0.5f, 0.31f));
+        _lightingShader.SetUniform("material.specular", new Vector3(0.5f, 0.5f, 0.5f));
+        _lightingShader.SetUniform("material.shininess", 32f);
 
+        var difference = (float)(DateTime.UtcNow - _startTime).TotalSeconds;
+        _lightColor = Vector3.Zero;
+        _lightColor.X = MathF.Sin(difference * 2f);
+        _lightColor.Y = MathF.Sin(difference * 0.7f);
+        _lightColor.Z = MathF.Sin(difference * 1.3f);
+        
+        var diffuseColor = _lightColor * new Vector3(0.5f);
+        var ambientColor = diffuseColor * new Vector3(0.2f);
+        
+        _lightingShader.SetUniform("light.ambient", ambientColor);
+        _lightingShader.SetUniform("light.diffuse", diffuseColor);
+        _lightingShader.SetUniform("light.specular", new Vector3(1f, 1f, 1f));
+        _lightingShader.SetUniform("light.position", LampPosition);
+        
         _gl.DrawArrays(PrimitiveType.Triangles, 0, 36);
     }
     
@@ -146,6 +166,7 @@ public class Program
         _lampShader.SetUniform("uModel", lampMatrix);
         _lampShader.SetUniform("uView", _camera.ViewMatrix);
         _lampShader.SetUniform("uProjection", _camera.ProjectionMatrix);
+        _lampShader.SetUniform("uColor", _lightColor);
 
         _gl.DrawArrays(PrimitiveType.Triangles, 0, 36);
     }
