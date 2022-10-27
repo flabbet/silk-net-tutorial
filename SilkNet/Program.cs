@@ -130,6 +130,7 @@ public class Program
         _lightingShader.SetUniform("objectColor", new Vector3(1f, 0.5f, 0.31f));
         _lightingShader.SetUniform("lightColor", Vector3.One);
         _lightingShader.SetUniform("lightPos", LampPosition);
+        _lightingShader.SetUniform("viewPos", _camera.Position);
 
         _gl.DrawArrays(PrimitiveType.Triangles, 0, 36);
     }
