@@ -22,6 +22,7 @@ public class Program
     private static Shader _lampShader;
     private static Texture _texture;
     private static Gif _dogGif;
+    private static Vector3 LampPosition = new Vector3(1.2f, 1.0f, 2.0f);
 
     private static Camera _camera; 
 
@@ -65,7 +66,8 @@ public class Program
         _vbo = new BufferObject<float>(_gl, GeometryData.Vertices, BufferTargetARB.ArrayBuffer);
         _cubeVao = new VertexArrayObject<float, uint>(_gl, _vbo, _ebo);
         
-        _cubeVao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 3, 0);
+        _cubeVao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 6, 0);
+        _cubeVao.VertexAttributePointer(1, 3, VertexAttribPointerType.Float, 6, 3);
 
         //The lighting shader will give our main cube its colour multiplied by the lights intensity
         _lightingShader = new Shader(_gl, vertexShader, litShader);
@@ -113,6 +115,12 @@ public class Program
         _gl.Clear((uint) (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit));
         _cubeVao.Bind();
         
+        RenderLitCube();
+        RenderLampCube();
+    }
+
+    private static void RenderLitCube()
+    {
         _lightingShader.Use();
         //_dogGif.GetFrame(_currentFrame).Bind();
 
@@ -121,23 +129,26 @@ public class Program
         _lightingShader.SetUniform("uProjection", _camera.ProjectionMatrix);
         _lightingShader.SetUniform("objectColor", new Vector3(1f, 0.5f, 0.31f));
         _lightingShader.SetUniform("lightColor", Vector3.One);
-        
-        _gl.DrawArrays(PrimitiveType.Triangles, 0, 36);
+        _lightingShader.SetUniform("lightPos", LampPosition);
 
+        _gl.DrawArrays(PrimitiveType.Triangles, 0, 36);
+    }
+    
+    private static void RenderLampCube()
+    {
         _lampShader.Use();
 
         var lampMatrix = Matrix4x4.Identity;
         lampMatrix *= Matrix4x4.CreateScale(0.2f);
         lampMatrix *= Matrix4x4.CreateTranslation(new Vector3(1.2f, 1f, 2f));
-        
+
         _lampShader.SetUniform("uModel", lampMatrix);
         _lampShader.SetUniform("uView", _camera.ViewMatrix);
         _lampShader.SetUniform("uProjection", _camera.ProjectionMatrix);
-        
-        
+
         _gl.DrawArrays(PrimitiveType.Triangles, 0, 36);
     }
-    
+
     private static void OnClose()
     {
         _vbo.Dispose();
