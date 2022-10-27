@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using Silk.NET.Core.Contexts;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
@@ -13,25 +12,18 @@ public class Program
     private static GL _gl;
     
     private static string vertexShader;
-    private static string fragmentShader;
+    private static string unlitShader;
+    private static string litShader;
     
     private static BufferObject<float> _vbo;
     private static BufferObject<uint> _ebo;
-    private static VertexArrayObject<float, uint> _vao;
-    private static Shader _shaderProgram;
+    private static VertexArrayObject<float, uint> _cubeVao;
+    private static Shader _lightingShader;
+    private static Shader _lampShader;
     private static Texture _texture;
     private static Gif _dogGif;
 
-    private static Vector3 _cameraPosition = new Vector3(0, 1, 3f);
-    private static Vector3 _cameraFront = new Vector3(0, 0, -1);
-    private static Vector3 _cameraTarget = Vector3.Zero;
-    private static Vector3 _cameraDirection = Vector3.Normalize(_cameraPosition - _cameraTarget);
-    private static Vector3 _cameraRight = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, _cameraDirection));
-    private static Vector3 _cameraUp = Vector3.Cross(_cameraDirection, _cameraRight);
-
-    private static float _cameraYaw = -90f;
-    private static float _cameraPitch = 0f;
-    private static float _cameraZoom = 45f;
+    private static Camera _camera; 
 
     private static Vector2 _lastMousePosition;
     private static IKeyboard _primaryKeyboard;
@@ -63,21 +55,26 @@ public class Program
         RegisterMouse(input);
 
         vertexShader = ShaderLoader.LoadRaw("VertexShader");
-        fragmentShader = ShaderLoader.LoadRaw("FragmentShader");
+        unlitShader = ShaderLoader.LoadRaw("UnlitShader");
+        litShader = ShaderLoader.LoadRaw("LitShader");
         
         //Getting the opengl api for drawing to the screen.
         _gl = GL.GetApi(_window);
 
         _ebo = new BufferObject<uint>(_gl, GeometryData.Indices, BufferTargetARB.ElementArrayBuffer);
         _vbo = new BufferObject<float>(_gl, GeometryData.Vertices, BufferTargetARB.ArrayBuffer);
-        _vao = new VertexArrayObject<float, uint>(_gl, _vbo, _ebo);
+        _cubeVao = new VertexArrayObject<float, uint>(_gl, _vbo, _ebo);
         
-        _vao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 5, 0);
-        _vao.VertexAttributePointer(1, 2, VertexAttribPointerType.Float, 5, 3);
+        _cubeVao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 3, 0);
 
-        _shaderProgram = new Shader(_gl, vertexShader, fragmentShader);
+        //The lighting shader will give our main cube its colour multiplied by the lights intensity
+        _lightingShader = new Shader(_gl, vertexShader, litShader);
+        _lampShader = new Shader(_gl, vertexShader, unlitShader);
+
         _texture = new Texture(_gl, "Images/texture.png");
         _dogGif = new Gif(_gl, "Images/dancing-dog.gif");
+        
+        _camera = new Camera(Vector3.UnitZ * 6, Vector3.UnitZ * -1, Vector3.UnitY, (float)_window.Size.X / _window.Size.Y);
     }
     
     private static void OnUpdate(double deltaTime)
@@ -86,19 +83,19 @@ public class Program
 
         if (_primaryKeyboard.IsKeyPressed(Key.W))
         {
-            _cameraPosition += moveSpeed * _cameraFront;
+            _camera.Position += moveSpeed * _camera.Front;
         }
         if (_primaryKeyboard.IsKeyPressed(Key.S))
         {
-            _cameraPosition -= moveSpeed * _cameraFront;
+            _camera.Position -= moveSpeed * _camera.Front;
         }
         if (_primaryKeyboard.IsKeyPressed(Key.A))
         {
-            _cameraPosition -= Vector3.Normalize(Vector3.Cross(_cameraFront, _cameraUp)) * moveSpeed;
+            _camera.Position -= Vector3.Normalize(Vector3.Cross(_camera.Front, _camera.Up)) * moveSpeed;
         }
         if (_primaryKeyboard.IsKeyPressed(Key.D))
         {
-            _cameraPosition += Vector3.Normalize(Vector3.Cross(_cameraFront, _cameraUp)) * moveSpeed;
+            _camera.Position += Vector3.Normalize(Vector3.Cross(_camera.Front, _camera.Up)) * moveSpeed;
         }
 
         _normalizedTime = Math.Clamp(_normalizedTime + (float)deltaTime, 0, 1);
@@ -114,20 +111,29 @@ public class Program
     {
         _gl.Enable(EnableCap.DepthTest);
         _gl.Clear((uint) (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit));
-        _vao.Bind();
+        _cubeVao.Bind();
         
-        _shaderProgram.Use();
-        _dogGif.GetFrame(_currentFrame).Bind();
+        _lightingShader.Use();
+        //_dogGif.GetFrame(_currentFrame).Bind();
+
+        _lightingShader.SetUniform("uModel", Matrix4x4.CreateRotationY(25f));
+        _lightingShader.SetUniform("uView", _camera.ViewMatrix);
+        _lightingShader.SetUniform("uProjection", _camera.ProjectionMatrix);
+        _lightingShader.SetUniform("objectColor", new Vector3(1f, 0.5f, 0.31f));
+        _lightingShader.SetUniform("lightColor", Vector3.One);
         
-        var difference = (float)(_window.Time * 100);
-        float differenceRadians = MathHelper.DegreesToRadians(difference);
-        var model = Matrix4x4.CreateRotationY(differenceRadians) * Matrix4x4.CreateRotationX(differenceRadians);
-        var view = Matrix4x4.CreateLookAt(_cameraPosition, _cameraPosition + _cameraFront, _cameraUp);
-        var projection = Matrix4x4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(_cameraZoom), _window.Size.X / _window.Size.Y, 0.1f, 100f);
+        _gl.DrawArrays(PrimitiveType.Triangles, 0, 36);
+
+        _lampShader.Use();
+
+        var lampMatrix = Matrix4x4.Identity;
+        lampMatrix *= Matrix4x4.CreateScale(0.2f);
+        lampMatrix *= Matrix4x4.CreateTranslation(new Vector3(1.2f, 1f, 2f));
         
-        _shaderProgram.SetUniform("uModel", model);
-        _shaderProgram.SetUniform("uView", view);
-        _shaderProgram.SetUniform("uProjection", projection);
+        _lampShader.SetUniform("uModel", lampMatrix);
+        _lampShader.SetUniform("uView", _camera.ViewMatrix);
+        _lampShader.SetUniform("uProjection", _camera.ProjectionMatrix);
+        
         
         _gl.DrawArrays(PrimitiveType.Triangles, 0, 36);
     }
@@ -136,9 +142,11 @@ public class Program
     {
         _vbo.Dispose();
         _ebo.Dispose();
-        _vao.Dispose();
-        _shaderProgram.Dispose();
+        _cubeVao.Dispose();
+        _lampShader.Dispose();
+        _lightingShader.Dispose();
         _texture.Dispose();
+        _dogGif.Dispose();
     }
 
     private static void RegisterKeyboards(IInputContext input)
@@ -173,7 +181,7 @@ public class Program
 
     private static void OnScroll(IMouse mouse, ScrollWheel wheel)
     {
-        _cameraZoom = Math.Clamp(_cameraZoom - wheel.Y, 1f, 45f);
+        _camera.Zoom = wheel.Y;
     }
 
     private static void OnMouseMove(IMouse mouse, Vector2 pos)
@@ -187,21 +195,11 @@ public class Program
         }
         else
         {
-            float xOffset = (pos.X - _lastMousePosition.X) * lookSensitivity;
-            float yOffset = (pos.Y - _lastMousePosition.Y) * lookSensitivity;
+            float offsetX = (pos.X - _lastMousePosition.X) * lookSensitivity;
+            float offsetY = (pos.Y - _lastMousePosition.Y) * lookSensitivity;
             _lastMousePosition = pos;
             
-            _cameraYaw += xOffset;
-            _cameraPitch -= yOffset;
-
-            _cameraPitch = Math.Clamp(_cameraPitch, -89f, 89f);
-
-            _cameraDirection.X = MathF.Cos(MathHelper.DegreesToRadians(_cameraYaw) *
-                                           MathF.Cos(MathHelper.DegreesToRadians(_cameraPitch)));
-            _cameraDirection.Y = MathF.Sin(MathHelper.DegreesToRadians(_cameraPitch));
-            _cameraDirection.Z = MathF.Sin(MathHelper.DegreesToRadians(_cameraYaw)) *
-                                 MathF.Cos(MathHelper.DegreesToRadians(_cameraPitch));
-            _cameraFront = Vector3.Normalize(_cameraDirection);
+            _camera.SetDirection(offsetX, offsetY);
         }
     }
 

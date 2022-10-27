@@ -5,7 +5,7 @@ using SixLabors.ImageSharp.PixelFormats;
 
 namespace SilkNet;
 
-public class Gif
+public class Gif : IDisposable
 {
     public int FrameCount => _frames.Length;
     
@@ -38,5 +38,13 @@ public class Gif
     {
         var memoryGroup = _gifImage.Frames[frame].PixelBuffer.MemoryGroup;
         return MemoryMarshal.AsBytes(memoryGroup[0].Span);
+    }
+
+    public void Dispose()
+    {
+        foreach (var frame in _frames)
+        {
+            frame.Dispose();
+        }
     }
 }

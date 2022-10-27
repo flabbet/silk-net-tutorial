@@ -50,6 +50,12 @@ public sealed class Shader : NativeObject
         int location = GetUniformLocation(name);
         GlContext.UniformMatrix4(location, 1, false, (float*)&transformViewMatrix);
     }
+    
+    public void SetUniform(string name, Vector3 value)
+    {
+        int location = GetUniformLocation(name);
+        GlContext.Uniform3(location, value.X, value.Y, value.Z);
+    }
 
     private int GetUniformLocation(string name)
     {
