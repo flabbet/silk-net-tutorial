@@ -20,7 +20,8 @@ public class Program
     private static VertexArrayObject<float, uint> _cubeVao;
     private static Shader _lightingShader;
     private static Shader _lampShader;
-    private static Texture _texture;
+    private static Texture _diffuseMap;
+    private static Texture _specularMap;
     private static Gif _dogGif;
     private static Vector3 LampPosition = new Vector3(1.2f, 1.0f, 2.0f);
 
@@ -71,14 +72,16 @@ public class Program
         _vbo = new BufferObject<float>(_gl, GeometryData.Vertices, BufferTargetARB.ArrayBuffer);
         _cubeVao = new VertexArrayObject<float, uint>(_gl, _vbo, _ebo);
         
-        _cubeVao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 6, 0);
-        _cubeVao.VertexAttributePointer(1, 3, VertexAttribPointerType.Float, 6, 3);
+        _cubeVao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 8, 0);
+        _cubeVao.VertexAttributePointer(1, 3, VertexAttribPointerType.Float, 8, 3);
+        _cubeVao.VertexAttributePointer(2, 2, VertexAttribPointerType.Float, 8, 6);
 
         //The lighting shader will give our main cube its colour multiplied by the lights intensity
         _lightingShader = new Shader(_gl, vertexShader, litShader);
         _lampShader = new Shader(_gl, vertexShader, unlitShader);
 
-        _texture = new Texture(_gl, "Images/texture.png");
+        _diffuseMap = new Texture(_gl, "Images/silkBoxed.png");
+        _specularMap = new Texture(_gl, "Images/silkSpecular.png");
         _dogGif = new Gif(_gl, "Images/dancing-dog.gif");
         
         _camera = new Camera(Vector3.UnitZ * 6, Vector3.UnitZ * -1, Vector3.UnitY, (float)_window.Size.X / _window.Size.Y);
@@ -128,14 +131,16 @@ public class Program
     {
         _lightingShader.Use();
         //_dogGif.GetFrame(_currentFrame).Bind();
+        
+        _diffuseMap.Bind();
+        _specularMap.Bind(TextureUnit.Texture1);
 
         _lightingShader.SetUniform("uModel", Matrix4x4.CreateRotationY(25f));
         _lightingShader.SetUniform("uView", _camera.ViewMatrix);
         _lightingShader.SetUniform("uProjection", _camera.ProjectionMatrix);
         _lightingShader.SetUniform("viewPos", _camera.Position);
-        _lightingShader.SetUniform("material.ambient", new Vector3(1f, 0.5f, 0.31f));
-        _lightingShader.SetUniform("material.diffuse", new Vector3(1f, 0.5f, 0.31f));
-        _lightingShader.SetUniform("material.specular", new Vector3(0.5f, 0.5f, 0.5f));
+        _lightingShader.SetUniform("material.diffuse", 0);
+        _lightingShader.SetUniform("material.specular", 1f);
         _lightingShader.SetUniform("material.shininess", 32f);
 
         var difference = (float)(DateTime.UtcNow - _startTime).TotalSeconds;
@@ -145,7 +150,7 @@ public class Program
         _lightColor.Z = MathF.Sin(difference * 1.3f);
         
         var diffuseColor = _lightColor * new Vector3(0.5f);
-        var ambientColor = diffuseColor * new Vector3(0.2f);
+        var ambientColor = diffuseColor * new Vector3(0.3f);
         
         _lightingShader.SetUniform("light.ambient", ambientColor);
         _lightingShader.SetUniform("light.diffuse", diffuseColor);
@@ -178,7 +183,8 @@ public class Program
         _cubeVao.Dispose();
         _lampShader.Dispose();
         _lightingShader.Dispose();
-        _texture.Dispose();
+        _diffuseMap.Dispose();
+        _specularMap.Dispose();
         _dogGif.Dispose();
     }
 
