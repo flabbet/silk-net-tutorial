@@ -3,27 +3,28 @@ using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
+using SilkNet.Geometry;
+using SilkNet.Geometry.Primitives;
+using SilkNet.Rendering;
+using Shader = SilkNet.Rendering.Shader;
+using Texture = SilkNet.Rendering.Texture;
 
 namespace SilkNet;
 
-public class Program
+public class Application
 {
+    public static GL GlContext { get; private set; }
     private static IWindow _window;
-    private static GL _gl;
-    
-    private static string vertexShader;
-    private static string unlitShader;
-    private static string litShader;
-    
-    private static BufferObject<float> _vbo;
-    private static BufferObject<uint> _ebo;
-    private static VertexArrayObject<float, uint> _cubeVao;
-    private static Shader _lightingShader;
+
     private static Shader _lampShader;
+    private static Shader _lightingShader;
     private static Texture _diffuseMap;
     private static Texture _specularMap;
     private static Gif _dogGif;
     private static Vector3 LampPosition = new Vector3(1.2f, 1.0f, 2.0f);
+
+    private static Cube _cube;
+    private static Material _cubeMaterial;
 
     private static Camera _camera; 
 
@@ -61,30 +62,40 @@ public class Program
         RegisterKeyboards(input);
         RegisterMouse(input);
 
-        vertexShader = ShaderLoader.LoadRaw("VertexShader");
-        unlitShader = ShaderLoader.LoadRaw("UnlitShader");
-        litShader = ShaderLoader.LoadRaw("LitShader");
+        ShaderLoader.VertexShader = ShaderLoader.LoadRaw("VertexShader");
+        ShaderLoader.UnlitShader = ShaderLoader.LoadRaw("UnlitShader");
+        ShaderLoader.LitShader = ShaderLoader.LoadRaw("LitShader");
         
         //Getting the opengl api for drawing to the screen.
-        _gl = GL.GetApi(_window);
-
-        _ebo = new BufferObject<uint>(_gl, GeometryData.Indices, BufferTargetARB.ElementArrayBuffer);
-        _vbo = new BufferObject<float>(_gl, GeometryData.Vertices, BufferTargetARB.ArrayBuffer);
-        _cubeVao = new VertexArrayObject<float, uint>(_gl, _vbo, _ebo);
-        
-        _cubeVao.VertexAttributePointer(0, 3, VertexAttribPointerType.Float, 8, 0);
-        _cubeVao.VertexAttributePointer(1, 3, VertexAttribPointerType.Float, 8, 3);
-        _cubeVao.VertexAttributePointer(2, 2, VertexAttribPointerType.Float, 8, 6);
+        GlContext = GL.GetApi(_window);
 
         //The lighting shader will give our main cube its colour multiplied by the lights intensity
-        _lightingShader = new Shader(_gl, vertexShader, litShader);
-        _lampShader = new Shader(_gl, vertexShader, unlitShader);
+        _lightingShader = new Shader(GlContext, ShaderLoader.VertexShader, ShaderLoader.LitShader);
+        _lampShader = new Shader(GlContext, ShaderLoader.VertexShader, ShaderLoader.UnlitShader);
 
-        _diffuseMap = new Texture(_gl, "Images/silkBoxed.png");
-        _specularMap = new Texture(_gl, "Images/silkSpecular.png");
-        _dogGif = new Gif(_gl, "Images/dancing-dog.gif");
+        _diffuseMap = new Texture(GlContext, "Images/silkBoxed.png");
+        _specularMap = new Texture(GlContext, "Images/silkSpecular.png");
+        _dogGif = new Gif(GlContext, "Images/dancing-dog.gif");
         
         _camera = new Camera(Vector3.UnitZ * 6, Vector3.UnitZ * -1, Vector3.UnitY, (float)_window.Size.X / _window.Size.Y);
+
+        _cubeMaterial = new Material("BasicMat", _lightingShader);
+        _cubeMaterial.AddTexture(_diffuseMap);
+        _cubeMaterial.AddTexture(_specularMap);
+        _cubeMaterial.AddProperty<Matrix4x4>("uModel");
+        _cubeMaterial.AddProperty<Matrix4x4>("uView");
+        _cubeMaterial.AddProperty<Matrix4x4>("uProjection");
+        _cubeMaterial.AddProperty<Vector3>("viewPos");
+        _cubeMaterial.AddProperty<float>("material.diffuse");
+        _cubeMaterial.AddProperty<float>("material.specular");
+        _cubeMaterial.AddProperty<float>("material.shininess");
+        
+        _cubeMaterial.AddProperty<Vector3>("light.specular");
+        _cubeMaterial.AddProperty<Vector3>("light.ambient");
+        _cubeMaterial.AddProperty<Vector3>("light.diffuse");
+        _cubeMaterial.AddProperty<Vector3>("light.position");
+
+        _cube = new Cube(_cubeMaterial);
     }
     
     private static void OnUpdate(double deltaTime)
@@ -119,30 +130,17 @@ public class Program
     
     private static void OnRender(double deltaTime)
     {
-        _gl.Enable(EnableCap.DepthTest);
-        _gl.Clear((uint) (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit));
-        _cubeVao.Bind();
+        GlContext.Enable(EnableCap.DepthTest);
+        GlContext.Clear((uint) (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit));
+
+        _cubeMaterial.SetProperty("uModel", Matrix4x4.CreateRotationY(25f));
+        _cubeMaterial.SetProperty("uView", _camera.ViewMatrix);
+        _cubeMaterial.SetProperty("uProjection", _camera.ProjectionMatrix);
+        _cubeMaterial.SetProperty("viewPos", _camera.Position);
+        _cubeMaterial.SetProperty("material.diffuse", 0f);
+        _cubeMaterial.SetProperty("material.specular", 1f);
+        _cubeMaterial.SetProperty("material.shininess", 32f);
         
-        RenderLitCube();
-        RenderLampCube();
-    }
-
-    private static void RenderLitCube()
-    {
-        _lightingShader.Use();
-        //_dogGif.GetFrame(_currentFrame).Bind();
-        
-        _diffuseMap.Bind();
-        _specularMap.Bind(TextureUnit.Texture1);
-
-        _lightingShader.SetUniform("uModel", Matrix4x4.CreateRotationY(25f));
-        _lightingShader.SetUniform("uView", _camera.ViewMatrix);
-        _lightingShader.SetUniform("uProjection", _camera.ProjectionMatrix);
-        _lightingShader.SetUniform("viewPos", _camera.Position);
-        _lightingShader.SetUniform("material.diffuse", 0);
-        _lightingShader.SetUniform("material.specular", 1f);
-        _lightingShader.SetUniform("material.shininess", 32f);
-
         var difference = (float)(DateTime.UtcNow - _startTime).TotalSeconds;
         _lightColor = Vector3.Zero;
         _lightColor.X = MathF.Sin(difference * 2f);
@@ -152,13 +150,14 @@ public class Program
         var diffuseColor = _lightColor * new Vector3(0.5f);
         var ambientColor = diffuseColor * new Vector3(0.3f);
         
-        _lightingShader.SetUniform("light.ambient", ambientColor);
-        _lightingShader.SetUniform("light.diffuse", diffuseColor);
-        _lightingShader.SetUniform("light.specular", new Vector3(1f, 1f, 1f));
-        _lightingShader.SetUniform("light.position", LampPosition);
-        
-        _gl.DrawArrays(PrimitiveType.Triangles, 0, 36);
+        _cubeMaterial.SetProperty("light.specular", new Vector3(1f, 1f, 1f));
+        _cubeMaterial.SetProperty("light.ambient", ambientColor);
+        _cubeMaterial.SetProperty("light.diffuse", diffuseColor);
+        _cubeMaterial.SetProperty("light.position", LampPosition);
+
+        _cube.Draw();
     }
+    
     
     private static void RenderLampCube()
     {
@@ -173,14 +172,11 @@ public class Program
         _lampShader.SetUniform("uProjection", _camera.ProjectionMatrix);
         _lampShader.SetUniform("uColor", _lightColor);
 
-        _gl.DrawArrays(PrimitiveType.Triangles, 0, 36);
+        GlContext.DrawArrays(PrimitiveType.Triangles, 0, 36);
     }
 
     private static void OnClose()
     {
-        _vbo.Dispose();
-        _ebo.Dispose();
-        _cubeVao.Dispose();
         _lampShader.Dispose();
         _lightingShader.Dispose();
         _diffuseMap.Dispose();

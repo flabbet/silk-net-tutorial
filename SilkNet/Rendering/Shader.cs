@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using Silk.NET.OpenGL;
 
-namespace SilkNet;
+namespace SilkNet.Rendering;
 
 public sealed class Shader : NativeObject
 {

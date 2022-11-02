@@ -2,6 +2,10 @@
 
 public static class ShaderLoader
 {
+    public static string VertexShader;
+    public static string UnlitShader;
+    public static string LitShader;
+    
     public static string LoadRaw(string name)
     {
         string filePath = Path.Join("Shaders", $"{name}.glsl");

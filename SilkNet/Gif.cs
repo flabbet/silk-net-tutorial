@@ -2,6 +2,7 @@
 using Silk.NET.OpenGL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using Texture = SilkNet.Rendering.Texture;
 
 namespace SilkNet;
 

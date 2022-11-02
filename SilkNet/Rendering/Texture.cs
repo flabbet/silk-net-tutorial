@@ -2,7 +2,7 @@
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
-namespace SilkNet;
+namespace SilkNet.Rendering;
 
 public sealed class Texture : NativeObject
 {
