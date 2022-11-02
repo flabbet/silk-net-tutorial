@@ -62,6 +62,8 @@ public class Cube : GeometryObject
     private BufferObject<float> _vbo;
     private BufferObject<uint> _ebo;
     private VertexArrayObject<float, uint> _vao;
+
+    public event Action PreRender; 
     
     public Cube(Material material) : base(new GeometryData(Vertices, Indices), material)
     {
@@ -78,6 +80,7 @@ public class Cube : GeometryObject
     {
         _vao.Bind();
         Material.Use();
+        PreRender?.Invoke();
         Application.GlContext.DrawArrays(PrimitiveType.Triangles, 0, 36);
     }
 

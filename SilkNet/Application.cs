@@ -96,8 +96,34 @@ public class Application
         _cubeMaterial.AddProperty<Vector3>("light.position");
 
         _cube = new Cube(_cubeMaterial);
+        _cube.PreRender += CubeOnPreRender;
     }
-    
+
+    private static void CubeOnPreRender()
+    {
+        _cubeMaterial.SetProperty("uModel", Matrix4x4.CreateRotationY(25f));
+        _cubeMaterial.SetProperty("uView", _camera.ViewMatrix);
+        _cubeMaterial.SetProperty("uProjection", _camera.ProjectionMatrix);
+        _cubeMaterial.SetProperty("viewPos", _camera.Position);
+        _cubeMaterial.SetProperty("material.diffuse", 0f);
+        _cubeMaterial.SetProperty("material.specular", 1f);
+        _cubeMaterial.SetProperty("material.shininess", 32f);
+        
+        var difference = (float)(DateTime.UtcNow - _startTime).TotalSeconds;
+        _lightColor = Vector3.Zero;
+        _lightColor.X = MathF.Sin(difference * 2f);
+        _lightColor.Y = MathF.Sin(difference * 0.7f);
+        _lightColor.Z = MathF.Sin(difference * 1.3f);
+        
+        var diffuseColor = _lightColor * new Vector3(0.5f);
+        var ambientColor = diffuseColor * new Vector3(0.3f);
+        
+        _cubeMaterial.SetProperty("light.specular", new Vector3(1f, 1f, 1f));
+        _cubeMaterial.SetProperty("light.ambient", ambientColor);
+        _cubeMaterial.SetProperty("light.diffuse", diffuseColor);
+        _cubeMaterial.SetProperty("light.position", LampPosition);
+    }
+
     private static void OnUpdate(double deltaTime)
     {
         float moveSpeed = 2.5f * (float)deltaTime;
@@ -133,29 +159,9 @@ public class Application
         GlContext.Enable(EnableCap.DepthTest);
         GlContext.Clear((uint) (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit));
 
-        _cubeMaterial.SetProperty("uModel", Matrix4x4.CreateRotationY(25f));
-        _cubeMaterial.SetProperty("uView", _camera.ViewMatrix);
-        _cubeMaterial.SetProperty("uProjection", _camera.ProjectionMatrix);
-        _cubeMaterial.SetProperty("viewPos", _camera.Position);
-        _cubeMaterial.SetProperty("material.diffuse", 0f);
-        _cubeMaterial.SetProperty("material.specular", 1f);
-        _cubeMaterial.SetProperty("material.shininess", 32f);
-        
-        var difference = (float)(DateTime.UtcNow - _startTime).TotalSeconds;
-        _lightColor = Vector3.Zero;
-        _lightColor.X = MathF.Sin(difference * 2f);
-        _lightColor.Y = MathF.Sin(difference * 0.7f);
-        _lightColor.Z = MathF.Sin(difference * 1.3f);
-        
-        var diffuseColor = _lightColor * new Vector3(0.5f);
-        var ambientColor = diffuseColor * new Vector3(0.3f);
-        
-        _cubeMaterial.SetProperty("light.specular", new Vector3(1f, 1f, 1f));
-        _cubeMaterial.SetProperty("light.ambient", ambientColor);
-        _cubeMaterial.SetProperty("light.diffuse", diffuseColor);
-        _cubeMaterial.SetProperty("light.position", LampPosition);
-
         _cube.Draw();
+        
+        RenderLampCube();
     }
     
     
