@@ -1,4 +1,5 @@
-﻿using Silk.NET.OpenGL;
+﻿using System.Numerics;
+using Silk.NET.OpenGL;
 using SilkNet.Rendering;
 
 namespace SilkNet.Geometry.Primitives;
@@ -80,6 +81,19 @@ public class Cube : GeometryObject
     public override void Draw() 
     {
         Application.GlContext.DrawArrays(PrimitiveType.Triangles, 0, 36);
+    }
+
+    public override bool IsInFrustum(Frustum frustum, Transform transform)
+    {
+        Vector3 position = transform.Position;
+
+        Vector3 min = position - Vector3.One;
+        Vector3 max = position + Vector3.One;
+        
+        AABB aabb = new AABB(min, max);
+        return aabb.IsOnOrForwardPlan(frustum.Left) && aabb.IsOnOrForwardPlan(frustum.Right) &&
+               aabb.IsOnOrForwardPlan(frustum.Top) && aabb.IsOnOrForwardPlan(frustum.Bottom) &&
+               aabb.IsOnOrForwardPlan(frustum.Near) && aabb.IsOnOrForwardPlan(frustum.Far);
     }
 
     public override void Dispose()

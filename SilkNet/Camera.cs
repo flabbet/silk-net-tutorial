@@ -1,17 +1,21 @@
 ﻿using System.Numerics;
+using SilkNet.Rendering;
 
 namespace SilkNet;
 
 public class Camera
 {
     public Vector3 Position { get; set; }
-    public Vector3 Front { get; private set; }
-    
+    public Vector3 Forward { get; private set; }
     public Vector3 Up { get; private set; }
+    public Vector3 Right { get; private set; }
+    
     public float AspectRatio { get; set; }
 
     public float Yaw { get; set; } = -90f;
     public float Pitch { get; set; }
+    
+    public Frustum Frustum { get; private set; }
 
     private float _zoom = 45f;
     public float Zoom
@@ -20,17 +24,23 @@ public class Camera
         set => _zoom = Math.Clamp(Zoom - value, 1f, 45f);
     }
 
-    public Matrix4x4 ViewMatrix => Matrix4x4.CreateLookAt(Position, Position + Front, Up);
+    public Matrix4x4 ViewMatrix => Matrix4x4.CreateLookAt(Position, Position + Forward, Up);
 
     public Matrix4x4 ProjectionMatrix =>
         Matrix4x4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(Zoom), AspectRatio, 0.1f, 100f);
     
-    public Camera(Vector3 position, Vector3 front, Vector3 up, float aspectRatio)
+    public Camera(Vector3 position, Vector3 forward, Vector3 up, float aspectRatio)
     {
         Position = position;
-        Front = front;
+        Forward = forward;
         Up = up;
         AspectRatio = aspectRatio;
+        Frustum = new Frustum(this, Zoom, 0.1f, 100f);
+    }
+
+    public void RecalculateFrustum()
+    {
+        Frustum = new Frustum(this, Zoom, 0.1f, 100f);
     }
 
     public void SetDirection(float xOffset, float yOffset)
@@ -45,6 +55,6 @@ public class Camera
         cameraDirection.Y = MathF.Sin(MathHelper.DegreesToRadians(Pitch));
         cameraDirection.Z = MathF.Sin(MathHelper.DegreesToRadians(Yaw)) * MathF.Cos(MathHelper.DegreesToRadians(Pitch));
         
-        Front = Vector3.Normalize(cameraDirection);
+        Forward = Vector3.Normalize(cameraDirection);
     }
 }

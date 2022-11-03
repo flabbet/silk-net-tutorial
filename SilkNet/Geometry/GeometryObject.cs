@@ -10,6 +10,7 @@ public abstract class GeometryObject : IDisposable
 
     public abstract void OpenDrawingContext();
     public abstract void Draw();
+    public abstract bool IsInFrustum(Frustum frustum, Transform transform);
     
     public GeometryObject(GeometryData geometryData, int materialIndex)
     {

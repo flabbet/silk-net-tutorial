@@ -158,28 +158,29 @@ public class Application
             _currentFrame = 0;
         }
 
+        _camera.RecalculateFrustum();
     }
 
     private static void HandleMovement(float moveSpeed)
     {
         if (_primaryKeyboard.IsKeyPressed(Key.W))
         {
-            _camera.Position += moveSpeed * _camera.Front;
+            _camera.Position += moveSpeed * _camera.Forward;
         }
 
         if (_primaryKeyboard.IsKeyPressed(Key.S))
         {
-            _camera.Position -= moveSpeed * _camera.Front;
+            _camera.Position -= moveSpeed * _camera.Forward;
         }
 
         if (_primaryKeyboard.IsKeyPressed(Key.A))
         {
-            _camera.Position -= Vector3.Normalize(Vector3.Cross(_camera.Front, _camera.Up)) * moveSpeed;
+            _camera.Position -= Vector3.Normalize(Vector3.Cross(_camera.Forward, _camera.Up)) * moveSpeed;
         }
 
         if (_primaryKeyboard.IsKeyPressed(Key.D))
         {
-            _camera.Position += Vector3.Normalize(Vector3.Cross(_camera.Front, _camera.Up)) * moveSpeed;
+            _camera.Position += Vector3.Normalize(Vector3.Cross(_camera.Forward, _camera.Up)) * moveSpeed;
         }
     }
 
@@ -198,6 +199,8 @@ public class Application
 
         foreach (var obj in _objects)
         {
+            if(!obj.IsInFrustum(_camera.Frustum, obj.Transform)) continue;
+            
             obj.OpenDrawingContext();
             _materials[0].PrepareForObject(obj.Transform);
             obj.Draw();
