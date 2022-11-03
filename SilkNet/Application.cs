@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.Diagnostics;
+using System.Numerics;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
@@ -23,8 +24,8 @@ public class Application
     private static Gif _dogGif;
     private static Vector3 LampPosition = new Vector3(1.2f, 1.0f, 2.0f);
 
-    private static Cube _cube;
-    private static Material _cubeMaterial;
+    private static List<GeometryObject> _objects = new List<GeometryObject>();
+    private static List<Material> _materials = new List<Material>();
 
     private static Camera _camera; 
 
@@ -35,9 +36,12 @@ public class Application
     private const int GifSpeed = 1;
     private static float _normalizedTime;
     private static int _currentFrame;
+    private static double _lastTime;
     
     //Track when the window started so we can use the time elapsed to rotate the cube
     private static DateTime _startTime;
+    
+    private static Stopwatch _stopwatch = new Stopwatch();
     
     private static void Main(string[] args)
     {
@@ -50,6 +54,7 @@ public class Application
         _window.Update += OnUpdate;
         _window.Render += OnRender;
         _window.Closing += OnClose;
+        _window.VSync = false;
         _window.WindowBorder = WindowBorder.Fixed;
 
         _window.Run();
@@ -76,52 +81,59 @@ public class Application
         _diffuseMap = new Texture(GlContext, "Images/silkBoxed.png");
         _specularMap = new Texture(GlContext, "Images/silkSpecular.png");
         _dogGif = new Gif(GlContext, "Images/dancing-dog.gif");
-        
+
         _camera = new Camera(Vector3.UnitZ * 6, Vector3.UnitZ * -1, Vector3.UnitY, (float)_window.Size.X / _window.Size.Y);
 
-        _cubeMaterial = new Material("BasicMat", _lightingShader);
-        _cubeMaterial.AddTexture(_diffuseMap);
-        _cubeMaterial.AddTexture(_specularMap);
-        _cubeMaterial.AddProperty<Matrix4x4>("uModel");
-        _cubeMaterial.AddProperty<Matrix4x4>("uView");
-        _cubeMaterial.AddProperty<Matrix4x4>("uProjection");
-        _cubeMaterial.AddProperty<Vector3>("viewPos");
-        _cubeMaterial.AddProperty<float>("material.diffuse");
-        _cubeMaterial.AddProperty<float>("material.specular");
-        _cubeMaterial.AddProperty<float>("material.shininess");
+        Material cubeMat = new Material("BasicMat", _lightingShader);
+        cubeMat.AddTexture(_diffuseMap);
+        cubeMat.AddTexture(_specularMap);
+        cubeMat.AddProperty("material.diffuse", 1f);
+        cubeMat.AddProperty("material.specular", 1f);
+        cubeMat.AddProperty("material.shininess", 32f);
         
-        _cubeMaterial.AddProperty<Vector3>("light.specular");
-        _cubeMaterial.AddProperty<Vector3>("light.ambient");
-        _cubeMaterial.AddProperty<Vector3>("light.diffuse");
-        _cubeMaterial.AddProperty<Vector3>("light.position");
+        cubeMat.AddProperty<Vector3>("light.specular", Vector3.One);
+        cubeMat.AddProperty<Vector3>("light.ambient", Vector3.One);
+        cubeMat.AddProperty<Vector3>("light.diffuse", Vector3.One);
+        cubeMat.AddProperty<Vector3>("light.position", LampPosition);
 
-        _cube = new Cube(_cubeMaterial);
-        _cube.PreRender += CubeOnPreRender;
+        _materials.Add(cubeMat);
+        SpawnCubes(10, 10, 10);
     }
 
-    private static void CubeOnPreRender()
+    private static void SpawnCubes(int rows, int columns, int depth)
     {
-        _cubeMaterial.SetProperty("uModel", Matrix4x4.CreateRotationY(25f));
-        _cubeMaterial.SetProperty("uView", _camera.ViewMatrix);
-        _cubeMaterial.SetProperty("uProjection", _camera.ProjectionMatrix);
-        _cubeMaterial.SetProperty("viewPos", _camera.Position);
-        _cubeMaterial.SetProperty("material.diffuse", 0f);
-        _cubeMaterial.SetProperty("material.specular", 1f);
-        _cubeMaterial.SetProperty("material.shininess", 32f);
-        
+        for (int y = 0; y < columns; y++)
+        {
+            for (int x = 0; x < rows; x++)
+            {
+                for (int z = 0; z < depth; z++)
+                {
+                    _objects.Add(new Cube(0)
+                    {
+                        Transform = { Position = new Vector3(x * 2.5f, y * 2.5f, z * 2.5f) }
+                    });
+                }
+            }
+        }
+    }
+
+    private static void UpdateBasicMaterial()
+    {
+        Material cubeMat = _materials[0];
+
         var difference = (float)(DateTime.UtcNow - _startTime).TotalSeconds;
         _lightColor = Vector3.Zero;
         _lightColor.X = MathF.Sin(difference * 2f);
         _lightColor.Y = MathF.Sin(difference * 0.7f);
         _lightColor.Z = MathF.Sin(difference * 1.3f);
         
-        var diffuseColor = _lightColor * new Vector3(0.5f);
-        var ambientColor = diffuseColor * new Vector3(0.3f);
+        var diffuseColor = /*_lightColor **/ new Vector3(1);
+        var ambientColor = diffuseColor * new Vector3(1f);
         
-        _cubeMaterial.SetProperty("light.specular", new Vector3(1f, 1f, 1f));
-        _cubeMaterial.SetProperty("light.ambient", ambientColor);
-        _cubeMaterial.SetProperty("light.diffuse", diffuseColor);
-        _cubeMaterial.SetProperty("light.position", LampPosition);
+        cubeMat.SetProperty("light.specular", new Vector3(1f, 1f, 1f));
+        cubeMat.SetProperty("light.ambient", ambientColor);
+        cubeMat.SetProperty("light.diffuse", diffuseColor);
+        cubeMat.SetProperty("light.position", LampPosition);
     }
 
     private static void OnUpdate(double deltaTime)
@@ -135,8 +147,17 @@ public class Application
         {
             _normalizedTime = 0;
         }
-        
-        _currentFrame = (int)(_normalizedTime * _dogGif.FrameCount);
+
+        double currentTime = _window.Time;
+        _currentFrame++;
+
+        if (currentTime - _lastTime >= 1)
+        {
+            _window.Title = $"Party Time - ms/frame: {(1000.0 / _currentFrame):F} (FPS: {_currentFrame})";
+            _lastTime = currentTime;
+            _currentFrame = 0;
+        }
+
     }
 
     private static void HandleMovement(float moveSpeed)
@@ -167,12 +188,23 @@ public class Application
         GlContext.Enable(EnableCap.DepthTest);
         GlContext.Clear((uint) (ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit));
 
-        _cube.Draw();
-        
-        RenderLampCube();
+        UpdateBasicMaterial();
+        RenderObjects();
     }
-    
-    
+
+    private static void RenderObjects()
+    {
+        _materials[0].Use(_camera);
+
+        foreach (var obj in _objects)
+        {
+            obj.OpenDrawingContext();
+            _materials[0].PrepareForObject(obj.Transform);
+            obj.Draw();
+        }
+    }
+
+
     private static void RenderLampCube()
     {
         _lampShader.Use();

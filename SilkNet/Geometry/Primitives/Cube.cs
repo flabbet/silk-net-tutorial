@@ -1,7 +1,5 @@
-﻿using System.Numerics;
-using Silk.NET.OpenGL;
+﻿using Silk.NET.OpenGL;
 using SilkNet.Rendering;
-using Shader = SilkNet.Rendering.Shader;
 
 namespace SilkNet.Geometry.Primitives;
 
@@ -63,9 +61,7 @@ public class Cube : GeometryObject
     private BufferObject<uint> _ebo;
     private VertexArrayObject<float, uint> _vao;
 
-    public event Action PreRender; 
-    
-    public Cube(Material material) : base(new GeometryData(Vertices, Indices), material)
+    public Cube(int materialIndex) : base(new GeometryData(Vertices, Indices), materialIndex)
     {
         _ebo = new BufferObject<uint>(Application.GlContext, GeometryData.Indices, BufferTargetARB.ElementArrayBuffer);
         _vbo = new BufferObject<float>(Application.GlContext, GeometryData.Vertices, BufferTargetARB.ArrayBuffer);
@@ -76,11 +72,13 @@ public class Cube : GeometryObject
         _vao.VertexAttributePointer(2, 2, VertexAttribPointerType.Float, 8, 6);
     }
 
-    public override void Draw() 
+    public override void OpenDrawingContext()
     {
         _vao.Bind();
-        Material.Use();
-        PreRender?.Invoke();
+    }
+
+    public override void Draw() 
+    {
         Application.GlContext.DrawArrays(PrimitiveType.Triangles, 0, 36);
     }
 

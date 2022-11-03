@@ -5,15 +5,16 @@ namespace SilkNet.Geometry;
 public abstract class GeometryObject : IDisposable
 {
     public Transform Transform { get; set; } = new Transform();
-    public Material Material { get; set; }
+    public int MaterialIndex { get; set; } = -1;
     public GeometryData GeometryData { get; }
-    
+
+    public abstract void OpenDrawingContext();
     public abstract void Draw();
     
-    public GeometryObject(GeometryData geometryData, Material material)
+    public GeometryObject(GeometryData geometryData, int materialIndex)
     {
         GeometryData = geometryData;
-        Material = material;
+        MaterialIndex = materialIndex;
     }
 
     public abstract void Dispose();

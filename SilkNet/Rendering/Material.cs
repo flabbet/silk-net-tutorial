@@ -16,12 +16,27 @@ public class Material : IDisposable
     {
         Name = name;
         Shader = shader;
+        
+        AddProperty<Matrix4x4>("uModel");
+        AddProperty<Matrix4x4>("uView");
+        AddProperty<Matrix4x4>("uProjection");
+        AddProperty<Vector3>("viewPos");
     }
 
-    public void Use()
+    public void Use(Camera camera)
     {
         BindTextures();
         Shader.Use();
+        
+        SetProperty("uView", camera.ViewMatrix);
+        SetProperty("uProjection", camera.ProjectionMatrix);
+        SetProperty("viewPos", camera.Position);
+    }
+
+    public void PrepareForObject(Transform transform)
+    {
+        SetProperty("uModel", transform.ViewMatrix);
+        UpdateShader();
     }
 
     private void BindTextures()
@@ -43,7 +58,14 @@ public class Material : IDisposable
     {
         ShaderProperty<T> property = new ShaderProperty<T>(name, defaultValue);
         Properties.Add(property);
-        ApplyToShader(property);
+    }
+    
+    public void UpdateShader()
+    {
+        foreach (ShaderProperty property in Properties)
+        {
+            ApplyToShader(property);
+        }
     }
     
     public void SetProperty<T>(string name, T value) where T : struct
@@ -55,7 +77,6 @@ public class Material : IDisposable
                 if (property is ShaderProperty<T> prop)
                 {
                     prop.Value = value;
-                    ApplyToShader(prop);
                     return;
                 }
                 
@@ -66,21 +87,21 @@ public class Material : IDisposable
         throw new Exception($"Property {name} does not exist");
     }
 
-    private void ApplyToShader<T>(ShaderProperty<T> prop) where T : struct
+    private void ApplyToShader(ShaderProperty prop)
     {
-        if (prop.Value is float floatValue)
+        if (prop.ObjValue is float floatValue)
         {
             Shader.SetUniform(prop.UniformName, floatValue);
         }
-        else if (prop.Value is int intValue)
+        else if (prop.ObjValue is int intValue)
         {
             Shader.SetUniform(prop.UniformName, intValue);
         }
-        else if (prop.Value is Vector3 vec3)
+        else if (prop.ObjValue is Vector3 vec3)
         {
             Shader.SetUniform(prop.UniformName, vec3);
         }
-        else if(prop.Value is Matrix4x4 mat4)
+        else if(prop.ObjValue is Matrix4x4 mat4)
         {
             Shader.SetUniform(prop.UniformName, mat4);
         }
