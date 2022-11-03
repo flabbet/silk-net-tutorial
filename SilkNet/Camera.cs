@@ -41,10 +41,10 @@ public class Camera
         Pitch = Math.Clamp(Pitch, -89f, 89f);
 
         var cameraDirection = Vector3.Zero;
-        cameraDirection.X = MathF.Cos(MathHelper.DegreesToRadians(Yaw) * MathF.Cos(MathHelper.DegreesToRadians(Pitch)));
+        cameraDirection.X = MathF.Cos(MathHelper.DegreesToRadians(Yaw)) * MathF.Cos(MathHelper.DegreesToRadians(Pitch));
         cameraDirection.Y = MathF.Sin(MathHelper.DegreesToRadians(Pitch));
-        cameraDirection.Z = MathF.Sin(MathHelper.DegreesToRadians(Yaw) * MathF.Cos(MathHelper.DegreesToRadians(Pitch)));
-
+        cameraDirection.Z = MathF.Sin(MathHelper.DegreesToRadians(Yaw)) * MathF.Cos(MathHelper.DegreesToRadians(Pitch));
+        
         Front = Vector3.Normalize(cameraDirection);
     }
 }

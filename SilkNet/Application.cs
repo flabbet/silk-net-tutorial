@@ -128,22 +128,7 @@ public class Application
     {
         float moveSpeed = 2.5f * (float)deltaTime;
 
-        if (_primaryKeyboard.IsKeyPressed(Key.W))
-        {
-            _camera.Position += moveSpeed * _camera.Front;
-        }
-        if (_primaryKeyboard.IsKeyPressed(Key.S))
-        {
-            _camera.Position -= moveSpeed * _camera.Front;
-        }
-        if (_primaryKeyboard.IsKeyPressed(Key.A))
-        {
-            _camera.Position -= Vector3.Normalize(Vector3.Cross(_camera.Front, _camera.Up)) * moveSpeed;
-        }
-        if (_primaryKeyboard.IsKeyPressed(Key.D))
-        {
-            _camera.Position += Vector3.Normalize(Vector3.Cross(_camera.Front, _camera.Up)) * moveSpeed;
-        }
+        HandleMovement(moveSpeed);
 
         _normalizedTime = Math.Clamp(_normalizedTime + (float)deltaTime, 0, 1);
         if(_normalizedTime >= 1)
@@ -153,7 +138,30 @@ public class Application
         
         _currentFrame = (int)(_normalizedTime * _dogGif.FrameCount);
     }
-    
+
+    private static void HandleMovement(float moveSpeed)
+    {
+        if (_primaryKeyboard.IsKeyPressed(Key.W))
+        {
+            _camera.Position += moveSpeed * _camera.Front;
+        }
+
+        if (_primaryKeyboard.IsKeyPressed(Key.S))
+        {
+            _camera.Position -= moveSpeed * _camera.Front;
+        }
+
+        if (_primaryKeyboard.IsKeyPressed(Key.A))
+        {
+            _camera.Position -= Vector3.Normalize(Vector3.Cross(_camera.Front, _camera.Up)) * moveSpeed;
+        }
+
+        if (_primaryKeyboard.IsKeyPressed(Key.D))
+        {
+            _camera.Position += Vector3.Normalize(Vector3.Cross(_camera.Front, _camera.Up)) * moveSpeed;
+        }
+    }
+
     private static void OnRender(double deltaTime)
     {
         GlContext.Enable(EnableCap.DepthTest);
