@@ -20,7 +20,10 @@ public class Material : IDisposable
         AddProperty<Matrix4x4>("uModel");
         AddProperty<Matrix4x4>("uView");
         AddProperty<Matrix4x4>("uProjection");
-        AddProperty<Vector3>("viewPos");
+        if (shader.HasUniform("viewPos"))
+        {
+            AddProperty<Vector3>("viewPos");
+        }
     }
 
     public void Use(Camera camera)
@@ -30,7 +33,10 @@ public class Material : IDisposable
         
         SetProperty("uView", camera.ViewMatrix);
         SetProperty("uProjection", camera.ProjectionMatrix);
-        SetProperty("viewPos", camera.Position);
+        if (Shader.HasUniform("viewPos"))
+        {
+            SetProperty("viewPos", camera.Position);
+        }
     }
 
     public void PrepareForObject(Transform transform)

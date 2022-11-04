@@ -14,7 +14,6 @@ public class Camera
 
     public float Yaw { get; set; } = -90f;
     public float Pitch { get; set; }
-    
     public Frustum Frustum { get; private set; }
 
     private float _zoom = 45f;
@@ -28,7 +27,10 @@ public class Camera
 
     public Matrix4x4 ProjectionMatrix =>
         Matrix4x4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(Zoom), AspectRatio, 0.1f, 100f);
-    
+
+    public Quaternion Rotation => Quaternion.CreateFromYawPitchRoll(-MathHelper.DegreesToRadians(Yaw),
+        MathHelper.DegreesToRadians(Pitch), 0f);
+
     public Camera(Vector3 position, Vector3 forward, Vector3 up, float aspectRatio)
     {
         Position = position;
@@ -36,6 +38,7 @@ public class Camera
         Up = up;
         AspectRatio = aspectRatio;
         Frustum = new Frustum(this, Zoom, 0.1f, 100f);
+        SetDirection(0, 0);
     }
 
     public void RecalculateFrustum()
@@ -56,5 +59,7 @@ public class Camera
         cameraDirection.Z = MathF.Sin(MathHelper.DegreesToRadians(Yaw)) * MathF.Cos(MathHelper.DegreesToRadians(Pitch));
         
         Forward = Vector3.Normalize(cameraDirection);
+        Right = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, cameraDirection));
+        Up = Vector3.Cross(cameraDirection, Right);
     }
 }

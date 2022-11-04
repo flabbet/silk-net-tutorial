@@ -59,6 +59,7 @@ public class Cube : GeometryObject
     };
                 
     private BufferObject<float> _vbo;
+    
     private BufferObject<uint> _ebo;
     private VertexArrayObject<float, uint> _vao;
 
@@ -90,16 +91,16 @@ public class Cube : GeometryObject
         Vector3 min = position - Vector3.One;
         Vector3 max = position + Vector3.One;
         
-        AABB aabb = new AABB(min, max);
-        return aabb.IsOnOrForwardPlan(frustum.Left) && aabb.IsOnOrForwardPlan(frustum.Right) &&
-               aabb.IsOnOrForwardPlan(frustum.Top) && aabb.IsOnOrForwardPlan(frustum.Bottom) &&
-               aabb.IsOnOrForwardPlan(frustum.Near) && aabb.IsOnOrForwardPlan(frustum.Far);
+        AABB aabb = new AABB(min, max); 
+        return aabb.IsOnOrForwardPlane(frustum.Left) && aabb.IsOnOrForwardPlane(frustum.Right) &&
+               aabb.IsOnOrForwardPlane(frustum.Top) && aabb.IsOnOrForwardPlane(frustum.Bottom) &&
+               aabb.IsOnOrForwardPlane(frustum.Near) && aabb.IsOnOrForwardPlane(frustum.Far);
     }
 
     public override void Dispose()
     {
         _vbo.Dispose();
-        _ebo.Dispose();
+        _ebo.Dispose(); 
         _vao.Dispose();
     }
 }

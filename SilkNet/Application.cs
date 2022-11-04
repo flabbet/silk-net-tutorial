@@ -7,6 +7,7 @@ using Silk.NET.Windowing;
 using SilkNet.Geometry;
 using SilkNet.Geometry.Primitives;
 using SilkNet.Rendering;
+using SilkNet.Rendering.Debug;
 using Shader = SilkNet.Rendering.Shader;
 using Texture = SilkNet.Rendering.Texture;
 
@@ -25,6 +26,7 @@ public class Application
     private static Vector3 LampPosition = new Vector3(1.2f, 1.0f, 2.0f);
 
     private static List<GeometryObject> _objects = new List<GeometryObject>();
+    private static List<GeometryObject> _gizmos = new List<GeometryObject>();
     private static List<Material> _materials = new List<Material>();
 
     private static Camera _camera; 
@@ -40,9 +42,7 @@ public class Application
     
     //Track when the window started so we can use the time elapsed to rotate the cube
     private static DateTime _startTime;
-    
-    private static Stopwatch _stopwatch = new Stopwatch();
-    
+
     private static void Main(string[] args)
     {
         var options = WindowOptions.Default;
@@ -67,6 +67,7 @@ public class Application
         RegisterKeyboards(input);
         RegisterMouse(input);
 
+        ShaderLoader.BasicVertexShader = ShaderLoader.LoadRaw("BasicVertexShader");
         ShaderLoader.VertexShader = ShaderLoader.LoadRaw("VertexShader");
         ShaderLoader.UnlitShader = ShaderLoader.LoadRaw("UnlitShader");
         ShaderLoader.LitShader = ShaderLoader.LoadRaw("LitShader");
@@ -76,13 +77,13 @@ public class Application
 
         //The lighting shader will give our main cube its colour multiplied by the lights intensity
         _lightingShader = new Shader(GlContext, ShaderLoader.VertexShader, ShaderLoader.LitShader);
-        _lampShader = new Shader(GlContext, ShaderLoader.VertexShader, ShaderLoader.UnlitShader);
+        _lampShader = new Shader(GlContext, ShaderLoader.BasicVertexShader, ShaderLoader.UnlitShader);
 
         _diffuseMap = new Texture(GlContext, "Images/silkBoxed.png");
         _specularMap = new Texture(GlContext, "Images/silkSpecular.png");
         _dogGif = new Gif(GlContext, "Images/dancing-dog.gif");
 
-        _camera = new Camera(Vector3.UnitZ * 6, Vector3.UnitZ * -1, Vector3.UnitY, (float)_window.Size.X / _window.Size.Y);
+        _camera = new Camera(Vector3.UnitZ, Vector3.UnitZ * -1, Vector3.UnitY, (float)_window.Size.X / _window.Size.Y);
 
         Material cubeMat = new Material("BasicMat", _lightingShader);
         cubeMat.AddTexture(_diffuseMap);
@@ -95,9 +96,16 @@ public class Application
         cubeMat.AddProperty<Vector3>("light.ambient", Vector3.One);
         cubeMat.AddProperty<Vector3>("light.diffuse", Vector3.One);
         cubeMat.AddProperty<Vector3>("light.position", LampPosition);
+        
+        Material unlitMat = new Material("UnlitMat", _lampShader);
+        unlitMat.AddProperty("uColor", Vector3.One);
 
         _materials.Add(cubeMat);
+        _materials.Add(unlitMat);
+
         SpawnCubes(10, 10, 10);
+        _gizmos.AddRange(Gizmos.GetFrustumLines(_camera));
+        _gizmos.AddRange(Gizmos.GetFrustumNormals(_camera));
     }
 
     private static void SpawnCubes(int rows, int columns, int depth)
@@ -141,6 +149,8 @@ public class Application
         float moveSpeed = 2.5f * (float)deltaTime;
 
         HandleMovement(moveSpeed);
+        
+        float t = (float) (DateTime.UtcNow - _startTime).TotalSeconds;
 
         _normalizedTime = Math.Clamp(_normalizedTime + (float)deltaTime, 0, 1);
         if(_normalizedTime >= 1)
@@ -191,6 +201,7 @@ public class Application
 
         UpdateBasicMaterial();
         RenderObjects();
+        RenderGizmos();
     }
 
     private static void RenderObjects()
@@ -202,26 +213,23 @@ public class Application
             if(!obj.IsInFrustum(_camera.Frustum, obj.Transform)) continue;
             
             obj.OpenDrawingContext();
-            _materials[0].PrepareForObject(obj.Transform);
+            _materials[obj.MaterialIndex].PrepareForObject(obj.Transform);
             obj.Draw();
         }
     }
-
-
-    private static void RenderLampCube()
+    
+    private static void RenderGizmos()
     {
-        _lampShader.Use();
+        _materials[1].Use(_camera);
 
-        var lampMatrix = Matrix4x4.Identity;
-        lampMatrix *= Matrix4x4.CreateScale(0.2f);
-        lampMatrix *= Matrix4x4.CreateTranslation(new Vector3(1.2f, 1f, 2f));
-
-        _lampShader.SetUniform("uModel", lampMatrix);
-        _lampShader.SetUniform("uView", _camera.ViewMatrix);
-        _lampShader.SetUniform("uProjection", _camera.ProjectionMatrix);
-        _lampShader.SetUniform("uColor", _lightColor);
-
-        GlContext.DrawArrays(PrimitiveType.Triangles, 0, 36);
+        foreach (var obj in _gizmos)
+        {
+            obj.OpenDrawingContext();
+            _materials[obj.MaterialIndex].PrepareForObject(obj.Transform);
+            obj.Draw();
+        }
+        
+        //_gizmos.Clear();
     }
 
     private static void OnClose()

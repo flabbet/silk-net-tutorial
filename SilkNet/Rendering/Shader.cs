@@ -67,6 +67,11 @@ public sealed class Shader : NativeObject
 
         return location;
     }
+    
+    public bool HasUniform(string uniformName)
+    {
+        return GlContext.GetUniformLocation(Handle, uniformName) != -1;
+    }
 
     private uint InitShader(ShaderType type, string raw)
     {

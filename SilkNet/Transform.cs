@@ -20,6 +20,21 @@ public class Transform
             _isDirty = true;
         }
     }
+    
+    public Vector3 Right
+    {
+        get => Vector3.Transform(Vector3.UnitX, _rotation);
+    }
+    
+    public Vector3 Up
+    {
+        get => Vector3.Transform(Vector3.UnitY, _rotation);
+    }
+    
+    public Vector3 Forward
+    {
+        get => Vector3.Transform(Vector3.UnitZ, _rotation);
+    }
 
     public float Scale
     {
