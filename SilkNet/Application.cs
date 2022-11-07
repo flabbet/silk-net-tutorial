@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Numerics;
+﻿using System.Numerics;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
@@ -7,7 +6,6 @@ using Silk.NET.Windowing;
 using SilkNet.Geometry;
 using SilkNet.Geometry.Primitives;
 using SilkNet.Rendering;
-using SilkNet.Rendering.Debug;
 using Shader = SilkNet.Rendering.Shader;
 using Texture = SilkNet.Rendering.Texture;
 
@@ -104,7 +102,6 @@ public class Application
         _materials.Add(unlitMat);
 
         SpawnCubes(10, 10, 10);
-        _gizmos.AddRange(Gizmos.GetFrustumLines(_camera));
     }
 
     private static void SpawnCubes(int rows, int columns, int depth)
@@ -207,12 +204,10 @@ public class Application
     {
         _materials[0].Use(_camera);
 
-        int drawn = 0;
         foreach (var obj in _objects)
         {
             if(!obj.IsInFrustum(_camera.Frustum, obj.Transform)) continue;
             
-            drawn++;
             obj.OpenDrawingContext();
             _materials[obj.MaterialIndex].PrepareForObject(obj.Transform);
             obj.Draw();
@@ -229,8 +224,6 @@ public class Application
             _materials[obj.MaterialIndex].PrepareForObject(obj.Transform);
             obj.Draw();
         }
-        
-        //_gizmos.Clear();
     }
 
     private static void OnClose()

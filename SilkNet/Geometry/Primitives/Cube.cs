@@ -87,11 +87,29 @@ public class Cube : GeometryObject
     public override bool IsInFrustum(Frustum frustum, Transform transform)
     {
         Vector3 position = transform.Position;
+        Quaternion rotation = transform.Rotation;
 
-        Vector3 min = position - Vector3.One;
-        Vector3 max = position + Vector3.One;
-        
-        AABB aabb = new AABB(min, max); 
+        AABB aabb;
+
+        if (rotation.IsIdentity)
+        {
+            Vector3 extends = Vector3.One * Transform.Scale;
+            Vector3 min = position - extends;
+            Vector3 max = position + extends;
+            aabb = new AABB(min, max);
+        }
+        else
+        {
+            Vector3 right = transform.Right * transform.Scale;
+            Vector3 up = transform.Up * transform.Scale;
+            Vector3 forward = transform.Forward * transform.Scale;
+            
+            float x = Math.Abs(Vector3.Dot(Vector3.UnitX, right)) + Math.Abs(Vector3.Dot(Vector3.UnitX, up)) + Math.Abs(Vector3.Dot(Vector3.UnitX, forward));
+            float y = Math.Abs(Vector3.Dot(Vector3.UnitY, right)) + Math.Abs(Vector3.Dot(Vector3.UnitY, up)) + Math.Abs(Vector3.Dot(Vector3.UnitY, forward));
+            float z = Math.Abs(Vector3.Dot(Vector3.UnitZ, right)) + Math.Abs(Vector3.Dot(Vector3.UnitZ, up)) + Math.Abs(Vector3.Dot(Vector3.UnitZ, forward));
+            aabb = new AABB(position, x, y, z);
+        }
+
         
         return aabb.IsOnOrForwardPlane(frustum.Left) && aabb.IsOnOrForwardPlane(frustum.Right) &&
                aabb.IsOnOrForwardPlane(frustum.Top) && aabb.IsOnOrForwardPlane(frustum.Bottom) &&
