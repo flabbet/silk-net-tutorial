@@ -83,7 +83,7 @@ public class Application
         _specularMap = new Texture(GlContext, "Images/silkSpecular.png");
         _dogGif = new Gif(GlContext, "Images/dancing-dog.gif");
 
-        _camera = new Camera(Vector3.UnitZ, Vector3.UnitZ * -1, Vector3.UnitY, (float)_window.Size.X / _window.Size.Y);
+        _camera = new Camera(Vector3.Zero, Vector3.UnitZ, Vector3.UnitY, (float)_window.Size.X / _window.Size.Y);
 
         Material cubeMat = new Material("BasicMat", _lightingShader);
         cubeMat.AddTexture(_diffuseMap);
@@ -105,7 +105,6 @@ public class Application
 
         SpawnCubes(10, 10, 10);
         _gizmos.AddRange(Gizmos.GetFrustumLines(_camera));
-        _gizmos.AddRange(Gizmos.GetFrustumNormals(_camera));
     }
 
     private static void SpawnCubes(int rows, int columns, int depth)
@@ -208,10 +207,12 @@ public class Application
     {
         _materials[0].Use(_camera);
 
+        int drawn = 0;
         foreach (var obj in _objects)
         {
             if(!obj.IsInFrustum(_camera.Frustum, obj.Transform)) continue;
             
+            drawn++;
             obj.OpenDrawingContext();
             _materials[obj.MaterialIndex].PrepareForObject(obj.Transform);
             obj.Draw();

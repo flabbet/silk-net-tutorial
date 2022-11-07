@@ -27,19 +27,4 @@ public static class Gizmos
             new Line(corners[3], corners[7], 1)
         };
     }
-
-    public static Line[] GetFrustumNormals(Camera camera)
-    {
-        Frustum frustum = camera.Frustum;
-
-        return new[]
-        {
-            new Line(frustum.Bottom.Point, frustum.Bottom.Point + frustum.Bottom.Normal, 1),
-            new Line(frustum.Top.Point, frustum.Top.Point + frustum.Top.Normal, 1),
-            new Line(frustum.Left.Point, frustum.Left.Point + frustum.Left.Normal, 1),
-            new Line(frustum.Right.Point, frustum.Right.Point + frustum.Right.Normal, 1),
-            new Line(frustum.Near.Point, frustum.Near.Point + frustum.Near.Normal, 1),
-            new Line(frustum.Far.Point, frustum.Far.Point + frustum.Far.Normal, 1)
-        };
-    }
 }

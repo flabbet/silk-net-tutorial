@@ -9,7 +9,6 @@ public class Camera
     public Vector3 Forward { get; private set; }
     public Vector3 Up { get; private set; }
     public Vector3 Right { get; private set; }
-    
     public float AspectRatio { get; set; }
 
     public float Yaw { get; set; } = -90f;
@@ -37,13 +36,13 @@ public class Camera
         Forward = forward;
         Up = up;
         AspectRatio = aspectRatio;
-        Frustum = new Frustum(this, Zoom, 0.1f, 100f);
         SetDirection(0, 0);
+        Frustum = new Frustum(this, MathHelper.DegreesToRadians(Zoom), 0.1f, 100f);
     }
 
     public void RecalculateFrustum()
     {
-        Frustum = new Frustum(this, Zoom, 0.1f, 100f);
+        Frustum = new Frustum(this, MathHelper.DegreesToRadians(Zoom), 0.1f, 100f);
     }
 
     public void SetDirection(float xOffset, float yOffset)
@@ -57,9 +56,10 @@ public class Camera
         cameraDirection.X = MathF.Cos(MathHelper.DegreesToRadians(Yaw)) * MathF.Cos(MathHelper.DegreesToRadians(Pitch));
         cameraDirection.Y = MathF.Sin(MathHelper.DegreesToRadians(Pitch));
         cameraDirection.Z = MathF.Sin(MathHelper.DegreesToRadians(Yaw)) * MathF.Cos(MathHelper.DegreesToRadians(Pitch));
-        
-        Forward = Vector3.Normalize(cameraDirection);
-        Right = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, cameraDirection));
-        Up = Vector3.Cross(cameraDirection, Right);
+        cameraDirection = Vector3.Normalize(cameraDirection);
+
+        Forward = cameraDirection;
+        Right = Vector3.Normalize(Vector3.Cross(Forward, Vector3.UnitY));
+        Up = Vector3.Normalize(Vector3.Cross(Right, cameraDirection));
     }
 }

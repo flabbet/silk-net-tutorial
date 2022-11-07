@@ -92,6 +92,7 @@ public class Cube : GeometryObject
         Vector3 max = position + Vector3.One;
         
         AABB aabb = new AABB(min, max); 
+        
         return aabb.IsOnOrForwardPlane(frustum.Left) && aabb.IsOnOrForwardPlane(frustum.Right) &&
                aabb.IsOnOrForwardPlane(frustum.Top) && aabb.IsOnOrForwardPlane(frustum.Bottom) &&
                aabb.IsOnOrForwardPlane(frustum.Near) && aabb.IsOnOrForwardPlane(frustum.Far);
