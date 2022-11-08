@@ -45,6 +45,7 @@ public sealed class Shader : NativeObject
         GlContext.Uniform1(location, value);
     }
     
+    
     public unsafe void SetUniform(string name, Matrix4x4 transformViewMatrix)
     {
         int location = GetUniformLocation(name);

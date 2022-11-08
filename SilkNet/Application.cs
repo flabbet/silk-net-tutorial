@@ -5,6 +5,7 @@ using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
 using SilkNet.Geometry;
 using SilkNet.Geometry.Primitives;
+using SilkNet.Optimization;
 using SilkNet.Rendering;
 using Shader = SilkNet.Rendering.Shader;
 using Texture = SilkNet.Rendering.Texture;
@@ -40,6 +41,8 @@ public class Application
     
     //Track when the window started so we can use the time elapsed to rotate the cube
     private static DateTime _startTime;
+    
+    private static MaterialBatcher _materialBatcher;
 
     private static void Main(string[] args)
     {
@@ -84,8 +87,6 @@ public class Application
         _camera = new Camera(Vector3.Zero, Vector3.UnitZ, Vector3.UnitY, (float)_window.Size.X / _window.Size.Y);
 
         Material cubeMat = new Material("BasicMat", _lightingShader);
-        cubeMat.AddTexture(_diffuseMap);
-        cubeMat.AddTexture(_specularMap);
         cubeMat.AddProperty("material.diffuse", 1f);
         cubeMat.AddProperty("material.specular", 1f);
         cubeMat.AddProperty("material.shininess", 32f);
@@ -102,6 +103,8 @@ public class Application
         _materials.Add(unlitMat);
 
         SpawnCubes(10, 10, 10);
+        
+        _materialBatcher = new MaterialBatcher(_objects);
     }
 
     private static void SpawnCubes(int rows, int columns, int depth)
@@ -130,8 +133,8 @@ public class Application
         _lightColor.X = MathF.Sin(difference * 2f);
         _lightColor.Y = MathF.Sin(difference * 0.7f);
         _lightColor.Z = MathF.Sin(difference * 1.3f);
-        
-        var diffuseColor = /*_lightColor **/ new Vector3(1);
+
+        var diffuseColor = _lightColor * new Vector3(0.5f);
         var ambientColor = diffuseColor * new Vector3(1f);
         
         cubeMat.SetProperty("light.specular", new Vector3(1f, 1f, 1f));
@@ -197,32 +200,26 @@ public class Application
 
         UpdateBasicMaterial();
         RenderObjects();
-        RenderGizmos();
     }
 
     private static void RenderObjects()
     {
-        _materials[0].Use(_camera);
-
-        foreach (var obj in _objects)
+        foreach (var obj in _materialBatcher.Batches)
         {
-            if(!obj.IsInFrustum(_camera.Frustum, obj.Transform)) continue;
+            Batch batch = obj.Value;
+            Material material = _materials[obj.Key];
+            material.Use(_camera);
             
-            obj.OpenDrawingContext();
-            _materials[obj.MaterialIndex].PrepareForObject(obj.Transform);
-            obj.Draw();
-        }
-    }
-    
-    private static void RenderGizmos()
-    {
-        _materials[1].Use(_camera);
-
-        foreach (var obj in _gizmos)
-        {
-            obj.OpenDrawingContext();
-            _materials[obj.MaterialIndex].PrepareForObject(obj.Transform);
-            obj.Draw();
+            for (int i = 0; i < batch.ObjectsCount; i++)
+            {
+                GeometryObject geometryObject = _objects[batch.StartIndex + i];
+                if(!geometryObject.IsInFrustum(_camera.Frustum, geometryObject.Transform)) continue;
+                
+                geometryObject.OpenDrawingContext();
+                _materials[geometryObject.MaterialIndex].PrepareForObject(geometryObject.Transform);
+                geometryObject.Draw();
+            }
+           
         }
     }
 

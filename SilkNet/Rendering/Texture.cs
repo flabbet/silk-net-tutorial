@@ -8,14 +8,12 @@ public sealed class Texture : NativeObject
 {
     public Texture(GL glContext, string path) : base(glContext, glContext.GenTexture())
     {
-        Bind();
         LoadTextureFromPath(path);
         SetParameters();
     }
 
     public Texture(GL glContext, Span<byte> data, uint width, uint height) : base(glContext, glContext.GenTexture())
     {
-        Bind();
         LoadDataFromSpan(data, width, height);
     }
 
