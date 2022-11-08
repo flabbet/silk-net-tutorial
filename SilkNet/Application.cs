@@ -219,7 +219,6 @@ public class Application
                 _materials[geometryObject.MaterialIndex].PrepareForObject(geometryObject.Transform);
                 geometryObject.Draw();
             }
-           
         }
     }
 

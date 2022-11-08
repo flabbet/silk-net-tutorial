@@ -95,25 +95,22 @@ public class Material : IDisposable
 
     private void ApplyToShader(ShaderProperty prop)
     {
-        if (prop.ObjValue is float floatValue)
+        switch (prop.ObjValue)
         {
-            Shader.SetUniform(prop.UniformName, floatValue);
-        }
-        else if (prop.ObjValue is int intValue)
-        {
-            Shader.SetUniform(prop.UniformName, intValue);
-        }
-        else if (prop.ObjValue is Vector3 vec3)
-        {
-            Shader.SetUniform(prop.UniformName, vec3);
-        }
-        else if(prop.ObjValue is Matrix4x4 mat4)
-        {
-            Shader.SetUniform(prop.UniformName, mat4);
-        }
-        else
-        {
-            throw new Exception($"Property {prop.UniformName} is not a supported type");
+            case float floatValue:
+                Shader.SetUniform(prop.UniformName, floatValue);
+                break;
+            case int intValue:
+                Shader.SetUniform(prop.UniformName, intValue);
+                break;
+            case Vector3 vec3:
+                Shader.SetUniform(prop.UniformName, vec3);
+                break;
+            case Matrix4x4 mat4:
+                Shader.SetUniform(prop.UniformName, mat4);
+                break;
+            default:
+                throw new Exception($"Property {prop.UniformName} is not a supported type");
         }
     }
     
