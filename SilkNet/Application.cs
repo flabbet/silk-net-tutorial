@@ -51,14 +51,23 @@ public class Application
         options.Title = "Party Time";
         _window = Window.Create(options);
         
+        _window.Resize += WindowOnResize;
+        
         _window.Load += OnLoad;
         _window.Update += OnUpdate;
         _window.Render += OnRender;
         _window.Closing += OnClose;
         _window.VSync = false;
-        _window.WindowBorder = WindowBorder.Fixed;
 
         _window.Run();
+    }
+
+    private static void WindowOnResize(Vector2D<int> size)
+    {
+        GlContext.Viewport(0, 0, (uint)size.X, (uint)size.Y);
+        
+        if (_camera != null)
+            _camera.AspectRatio = (float)size.X / size.Y;
     }
 
     private static void OnLoad()
@@ -75,6 +84,9 @@ public class Application
         
         //Getting the opengl api for drawing to the screen.
         GlContext = GL.GetApi(_window);
+        
+        var monitor = _window.Monitor;
+        SetWindowMonitor(monitor);
 
         //The lighting shader will give our main cube its colour multiplied by the lights intensity
         _lightingShader = new Shader(GlContext, ShaderLoader.VertexShader, ShaderLoader.LitShader);
@@ -103,8 +115,28 @@ public class Application
         _materials.Add(unlitMat);
 
         SpawnCubes(10, 10, 10);
-        
+       
         _materialBatcher = new MaterialBatcher(_objects);
+    }
+
+    public static void InstantiateObject(GeometryObject obj)
+    {
+        _objects.Add(obj);
+        _materialBatcher.AddObject(obj, _objects.Count - 1);
+    }
+    
+    private static void SetWindowMonitor(IMonitor? monitor)
+    {
+        if (monitor == null)
+        {
+            _window.Position = new Vector2D<int>(0, 0);
+            _window.Size = new Vector2D<int>(800, 600);
+            return;
+        }
+        
+        _window.Size = monitor.Bounds.Size;
+        _window.Position = monitor.Bounds.Origin;
+        _window.Monitor = monitor;
     }
 
     private static void SpawnCubes(int rows, int columns, int depth)
@@ -257,7 +289,10 @@ public class Application
     {
         if (clickBtn == MouseButton.Left)
         {
-            _lastMousePosition = pos;
+            InstantiateObject(new Cube(0)
+            {
+                Transform = { Position = _camera.Position + _camera.Forward * 2f }
+            });
         }
     }
 
@@ -268,8 +303,6 @@ public class Application
 
     private static void OnMouseMove(IMouse mouse, Vector2 pos)
     {
-        if(!mouse.IsButtonPressed(MouseButton.Left)) return;
-        
         float lookSensitivity = 0.1f;
         if (_lastMousePosition == default)
         {

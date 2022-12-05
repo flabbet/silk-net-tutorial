@@ -30,6 +30,28 @@ public class MaterialBatcher
 
         Batches = Batches.OrderBy(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
     }
+
+    public void AddObject(GeometryObject geometryObject, int indexOfObject)
+    {
+        var materialIndex = geometryObject.MaterialIndex;
+        if (Batches.ContainsKey(materialIndex))
+        {
+            Batches[materialIndex].ObjectsCount++;
+        }
+        else
+        {
+            Batches.Add(materialIndex, new Batch(1, indexOfObject));
+        }
+    }
+    
+    public void RemoveObject(GeometryObject geometryObject)
+    {
+        var materialIndex = geometryObject.MaterialIndex;
+        if (Batches.ContainsKey(materialIndex))
+        {
+            Batches[materialIndex].ObjectsCount--;
+        }
+    }
 }
 
 public class Batch
